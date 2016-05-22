@@ -2,8 +2,8 @@
 
 SystemClass::SystemClass()
 {
-	m_Input = 0;
-	m_Graphics = 0;
+	m_Input = nullptr;
+	m_Graphics = nullptr;
 }
 
 SystemClass::SystemClass(const SystemClass& other)
@@ -40,19 +40,11 @@ bool SystemClass::Initialize()
 
 	// Create the graphics object.  This object will handle rendering all the graphics for this application.
 	m_Graphics = new GraphicsClass;
-	if (!m_Graphics)
-	{
-		return false;
-	}
 
 	// Initialize the graphics object.
 	result = m_Graphics->Initialize(screenHeight, screenWidth, m_hwnd);
-	if (!result)
-	{
-		return false;
-	}
 
-	return true;
+	return result;
 }
 
 void SystemClass::Shutdown()
@@ -62,20 +54,18 @@ void SystemClass::Shutdown()
 	{
 		m_Graphics->Shutdown();
 		delete m_Graphics;
-		m_Graphics = 0;
+		m_Graphics = nullptr;
 	}
 
 	// Release the input object.
 	if (m_Input)
 	{
 		delete m_Input;
-		m_Input = 0;
+		m_Input = nullptr;
 	}
 
 	// Shutdown the window.
 	ShutdownWindows();
-
-	return;
 }
 
 void SystemClass::Run()
@@ -114,8 +104,6 @@ void SystemClass::Run()
 		}
 
 	}
-
-	return;
 }
 
 bool SystemClass::Frame()
@@ -131,12 +119,8 @@ bool SystemClass::Frame()
 
 	// Do the frame processing for the graphics object.
 	result = m_Graphics->Frame();
-	if (!result)
-	{
-		return false;
-	}
 
-	return true;
+	return result;
 }
 
 LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
@@ -145,26 +129,22 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 	{
 		// Check if a key has been pressed on the keyboard.
 	case WM_KEYDOWN:
-	{
 		// If a key is pressed send it to the input object so it can record that state.
 		m_Input->KeyDown((unsigned int)wparam);
-		return 0;
-	}
+        break;
 
 	// Check if a key has been released on the keyboard.
 	case WM_KEYUP:
-	{
 		// If a key is released then send it to the input object so it can unset the state for that key.
 		m_Input->KeyUp((unsigned int)wparam);
-		return 0;
-	}
+        break;
 
 	// Any other messages send to the default message handler as our application won't make use of them.
 	default:
-	{
 		return DefWindowProc(hwnd, umsg, wparam, lparam);
 	}
-	}
+
+    return 0;
 }
 
 void SystemClass::InitializeWindows(int& screenHeight, int& screenWidth)
@@ -205,7 +185,7 @@ void SystemClass::InitializeWindows(int& screenHeight, int& screenWidth)
 	screenWidth = GetSystemMetrics(SM_CXSCREEN);
 
 	// Setup the screen settings depending on whether it is running in full screen or in windowed mode.
-	if (FULL_SCREEN)
+	if (m_Graphics->FULL_SCREEN)
 	{
 		// If full screen set the screen to maximum size of the users desktop and 32bit.
 		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
@@ -244,8 +224,6 @@ void SystemClass::InitializeWindows(int& screenHeight, int& screenWidth)
 
 	// Hide the mouse cursor.
 	//ShowCursor(false);
-
-	return;
 }
 
 void SystemClass::ShutdownWindows()
@@ -254,7 +232,7 @@ void SystemClass::ShutdownWindows()
 	ShowCursor(true);
 
 	// Fix the display settings if leaving full screen mode.
-	if (FULL_SCREEN)
+	if (m_Graphics->FULL_SCREEN)
 	{
 		ChangeDisplaySettings(NULL, 0);
 	}
@@ -269,32 +247,26 @@ void SystemClass::ShutdownWindows()
 
 	// Release the pointer to this class.
 	ApplicationHandle = NULL;
-
-	return;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
 	switch (umessage)
 	{
-		// Check if the window is being destroyed.
+	// Check if the window is being destroyed.
 	case WM_DESTROY:
-	{
 		PostQuitMessage(0);
-		return 0;
-	}
+        break;
 
 	// Check if the window is being closed.
 	case WM_CLOSE:
-	{
 		PostQuitMessage(0);
-		return 0;
-	}
+        break;
 
 	// All other messages pass to the message handler in the system class.
 	default:
-	{
 		return ApplicationHandle->MessageHandler(hwnd, umessage, wparam, lparam);
 	}
-	}
+
+    return 0;
 }
