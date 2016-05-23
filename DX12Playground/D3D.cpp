@@ -258,8 +258,8 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
 
     //Create pipeline state, load and compiler shaders.
     
-    //Note here to change D3DCOMPILER_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION for debug
-    UINT compileFlags = 0;
+    //Note here to change D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION for debug
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
     D3DCompileFromFile(
         L"DefaultShaders.hlsl", 
@@ -342,6 +342,18 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
     m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
     m_vertexBufferView.StrideInBytes = sizeof(Vertex);
     m_vertexBufferView.SizeInBytes = vertexBufferSize;
+
+    m_viewport.Height = screenHeight;
+    m_viewport.Width = screenWidth;
+    m_viewport.MaxDepth = 1000.f;
+    m_viewport.MinDepth = 0.1f;
+    m_viewport.TopLeftX = 0.f;
+    m_viewport.TopLeftY = 0.f;
+
+    m_scissorRect.left = 0;
+    m_scissorRect.right = screenWidth;
+    m_scissorRect.top = 0;
+    m_scissorRect.bottom = screenHeight;
 
     unsigned long long fenceToWaitFor = m_fenceValue;
     m_commandQueue->Signal(m_fence, fenceToWaitFor);
@@ -458,13 +470,7 @@ bool D3DClass::Render()
 
 	// Record commands in the command list now.
 	// Start by setting the resource barrier.
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = m_backBufferRenderTarget[m_bufferIndex];
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	m_commandList->ResourceBarrier(1, &barrier);
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_backBufferRenderTarget[m_bufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Get the render target view handle for the current back buffer.
 	renderTargetViewHandle = m_renderTargetViewHeap->GetCPUDescriptorHandleForHeapStart();
@@ -489,9 +495,7 @@ bool D3DClass::Render()
     m_commandList->DrawInstanced(3, 1, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-	m_commandList->ResourceBarrier(1, &barrier);
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_backBufferRenderTarget[m_bufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	// Close the list of commands.
 	m_commandList->Close();
