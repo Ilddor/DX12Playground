@@ -1,4 +1,7 @@
 #include "D3D.h"
+#include "d3dx12.h"
+#include <d3dcompiler.h>
+#include <array>
 
 D3DClass::D3DClass()
 {
@@ -13,6 +16,9 @@ D3DClass::D3DClass()
 	m_pipelineState = nullptr;
 	m_fence = nullptr;
 	m_fenceEvent = nullptr;
+    m_vertexShader = nullptr;
+    m_pixelShader = nullptr;
+    m_rootSignature = nullptr;
 }
 
 
@@ -224,20 +230,129 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
 	// Create a command allocator.
 	m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&m_commandAllocator);
 
-	// Create a basic command list.
-	m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator, NULL, __uuidof(ID3D12GraphicsCommandList), (void**)&m_commandList);
-
-	// Initially we need to close the command list during initialization as it is created in a recording state.
-	m_commandList->Close();
-
 	// Create a fence for GPU synchronization.
 	m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_fence);
 
 	// Create an event object for the fence.
-	m_fenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+	m_fenceEvent = CreateEvent(nullptr, false, false, nullptr);
 
 	// Initialize the starting fence value. 
 	m_fenceValue = 1;
+
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    ID3DBlob* signature;
+    ID3DBlob* error;
+
+    D3D12SerializeRootSignature(
+        &rootSignatureDesc, 
+        D3D_ROOT_SIGNATURE_VERSION_1, 
+        &signature, 
+        &error);
+    m_device->CreateRootSignature(
+        0, 
+        signature->GetBufferPointer(), 
+        signature->GetBufferSize(), 
+        IID_PPV_ARGS(&m_rootSignature));
+
+    //Create pipeline state, load and compiler shaders.
+    
+    //Note here to change D3DCOMPILER_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION for debug
+    UINT compileFlags = 0;
+
+    D3DCompileFromFile(
+        L"DefaultShaders.hlsl", 
+        nullptr, 
+        nullptr, 
+        "VSMain", 
+        "vs_5_0", 
+        compileFlags, 
+        0, 
+        &m_vertexShader, 
+        nullptr);
+
+    D3DCompileFromFile(
+        L"DefaultShaders.hlsl",
+        nullptr,
+        nullptr,
+        "PSMain",
+        "ps_5_0",
+        compileFlags,
+        0,
+        &m_pixelShader,
+        nullptr);
+
+    std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs = 
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc = {};
+    pipelineDesc.InputLayout = { inputElementDescs.data() , (UINT)inputElementDescs.size() };
+    pipelineDesc.pRootSignature = m_rootSignature;
+    pipelineDesc.VS = { m_vertexShader->GetBufferPointer(), m_vertexShader->GetBufferSize() };
+    pipelineDesc.PS = { m_pixelShader->GetBufferPointer(), m_pixelShader->GetBufferSize() };
+    pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    pipelineDesc.DepthStencilState.DepthEnable = false;
+    pipelineDesc.DepthStencilState.StencilEnable = false;
+    pipelineDesc.SampleMask = UINT_MAX;
+    pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    pipelineDesc.NumRenderTargets = 1;
+    pipelineDesc.RTVFormats[0] = DXGI_FORMAT_B8G8R8A8_UNORM;
+    pipelineDesc.SampleDesc.Count = 1;
+    m_device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&m_pipelineState));
+
+    // Create a basic command list.
+    m_device->CreateCommandList(
+        0, 
+        D3D12_COMMAND_LIST_TYPE_DIRECT, 
+        m_commandAllocator, 
+        m_pipelineState, 
+        IID_PPV_ARGS(&m_commandList));
+
+    // Initially we need to close the command list during initialization as it is created in a recording state.
+    m_commandList->Close();
+
+    Vertex triangleVertices[] =
+    {
+        { { 0.0f, 0.5f, 0.f }, { 1.f, 0.f, 0.f, 1.f } },
+        { { 0.5f, -0.5f, 0.f },{ 0.f, 1.f, 0.f, 1.f } },
+        { { -0.5f, -0.5f, 0.f },{ 0.f, 0.f, 1.f, 1.f } },
+    };
+
+    const UINT vertexBufferSize = sizeof(triangleVertices);
+
+    m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_vertexBuffer));
+
+    UINT8* pVertexDataBegin;
+    CD3DX12_RANGE readRange(0, 0);
+    m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+    memcpy(pVertexDataBegin, triangleVertices, vertexBufferSize);
+    m_vertexBuffer->Unmap(0, nullptr);
+
+    m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+    m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+    m_vertexBufferView.SizeInBytes = vertexBufferSize;
+
+    unsigned long long fenceToWaitFor = m_fenceValue;
+    m_commandQueue->Signal(m_fence, fenceToWaitFor);
+    m_fenceValue++;
+
+    // Wait until the GPU is done rendering.
+    if (m_fence->GetCompletedValue() < fenceToWaitFor)
+    {
+        m_fence->SetEventOnCompletion(fenceToWaitFor, m_fenceEvent);
+        WaitForSingleObject(m_fenceEvent, INFINITE);
+    }
 
 	return true;
 }
@@ -337,6 +452,10 @@ bool D3DClass::Render()
 	// Reset the command list, use empty pipeline state for now since there are no shaders and we are just clearing the screen.
 	m_commandList->Reset(m_commandAllocator, m_pipelineState);
 
+    m_commandList->SetGraphicsRootSignature(m_rootSignature);
+    m_commandList->RSSetViewports(1, &m_viewport);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+
 	// Record commands in the command list now.
 	// Start by setting the resource barrier.
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -356,14 +475,18 @@ bool D3DClass::Render()
 	}
 
 	// Set the back buffer as the render target.
-	m_commandList->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, NULL);
+	m_commandList->OMSetRenderTargets(1, &renderTargetViewHandle, false, nullptr);
 
 	// Then set the color to clear the window to.
 	color[0] = 0.5;
 	color[1] = 0.5;
 	color[2] = 0.5;
 	color[3] = 1.0;
-	m_commandList->ClearRenderTargetView(renderTargetViewHandle, color, 0, NULL);
+	m_commandList->ClearRenderTargetView(renderTargetViewHandle, color, 0, nullptr);
+
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+    m_commandList->DrawInstanced(3, 1, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;

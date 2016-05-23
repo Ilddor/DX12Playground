@@ -13,8 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Shaders">
-      <UniqueIdentifier>{0a474ad3-55ce-48b9-9740-5e8e7c432df7}</UniqueIdentifier>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{e1a9ad9c-a586-4496-85cd-d45524d1f9ee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -49,8 +49,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Default.shader">
-      <Filter>Shaders</Filter>
-    </None>
+    <FxCompile Include="DefaultShaders.hlsl">
+      <Filter>Resources</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
