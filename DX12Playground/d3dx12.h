@@ -17,7 +17,9 @@
 #if defined( __cplusplus )
 
 struct CD3DX12_DEFAULT {};
+struct CD3DX12_DEFAULT_WIREFRAME {};
 extern const DECLSPEC_SELECTANY CD3DX12_DEFAULT D3D12_DEFAULT;
+extern const DECLSPEC_SELECTANY CD3DX12_DEFAULT_WIREFRAME D3D12_DEFAULT_WIREFRAME;
 
 //------------------------------------------------------------------------------------------------
 inline bool operator==( const D3D12_VIEWPORT& l, const D3D12_VIEWPORT& r )
@@ -205,6 +207,20 @@ struct CD3DX12_RASTERIZER_DESC : public D3D12_RASTERIZER_DESC
     explicit CD3DX12_RASTERIZER_DESC( CD3DX12_DEFAULT )
     {
         FillMode = D3D12_FILL_MODE_SOLID;
+        CullMode = D3D12_CULL_MODE_BACK;
+        FrontCounterClockwise = FALSE;
+        DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+        DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+        SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+        DepthClipEnable = TRUE;
+        MultisampleEnable = FALSE;
+        AntialiasedLineEnable = FALSE;
+        ForcedSampleCount = 0;
+        ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    }
+    explicit CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT_WIREFRAME)
+    {
+        FillMode = D3D12_FILL_MODE_WIREFRAME;
         CullMode = D3D12_CULL_MODE_BACK;
         FrontCounterClockwise = FALSE;
         DepthBias = D3D12_DEFAULT_DEPTH_BIAS;

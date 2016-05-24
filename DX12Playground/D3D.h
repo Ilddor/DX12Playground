@@ -57,6 +57,8 @@ private:
 	unsigned long long m_fenceValue;
     ID3DBlob* m_vertexShader;
     ID3DBlob* m_pixelShader;
+    ID3DBlob* m_hullShader;
+    ID3DBlob* m_domainShader;
     ID3D12RootSignature* m_rootSignature;
     ID3D12Resource*  m_vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;

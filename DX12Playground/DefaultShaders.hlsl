@@ -1,7 +1,25 @@
 struct VertexOut
 {
-    float4 PosH  : SV_POSITION;
-    float4 Color : COLOR;
+    float3 position  : POSITION;
+    float4 color : COLOR;
+};
+
+struct ConstantOutputType
+{
+    float edges[3] : SV_TessFactor;
+    float inside : SV_InsideTessFactor;
+};
+
+struct HullOutputType
+{
+    float3 position : POSITION;
+    float4 color : COLOR;
+};
+
+struct PixelInputType
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
 };
 
 VertexOut VSMain(float3 position : POSITION, float4 color : COLOR)
@@ -9,15 +27,15 @@ VertexOut VSMain(float3 position : POSITION, float4 color : COLOR)
     VertexOut vout;
 
     // Transform to homogeneous clip space.
-    vout.PosH = float4(position, 1.f);
+    vout.position = position;
 
     // Just pass vertex color into the pixel shader.
-    vout.Color = color;
+    vout.color = color;
 
     return vout;
 }
 
-float4 PSMain(VertexOut pin) : SV_Target
+float4 PSMain(PixelInputType pin) : SV_Target
 {
-    return pin.Color;
+    return pin.color;
 }

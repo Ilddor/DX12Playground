@@ -2,6 +2,7 @@
 #include "d3dx12.h"
 #include <d3dcompiler.h>
 #include <array>
+#include <iostream>
 
 D3DClass::D3DClass()
 {
@@ -283,6 +284,28 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
         &m_pixelShader,
         nullptr);
 
+    D3DCompileFromFile(
+        L"DefaultHS.hlsl",
+        nullptr,
+        nullptr,
+        "HSMain",
+        "hs_5_0",
+        compileFlags,
+        0,
+        &m_hullShader,
+        &error);
+
+    D3DCompileFromFile(
+        L"DefaultDS.hlsl",
+        nullptr,
+        nullptr,
+        "main",
+        "ds_5_0",
+        compileFlags,
+        0,
+        &m_domainShader,
+        &error);
+
     std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs = 
     {
         D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -294,12 +317,14 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
     pipelineDesc.pRootSignature = m_rootSignature;
     pipelineDesc.VS = { m_vertexShader->GetBufferPointer(), m_vertexShader->GetBufferSize() };
     pipelineDesc.PS = { m_pixelShader->GetBufferPointer(), m_pixelShader->GetBufferSize() };
-    pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    pipelineDesc.HS = { m_hullShader->GetBufferPointer(), m_hullShader->GetBufferSize() };
+    pipelineDesc.DS = { m_domainShader->GetBufferPointer(), m_domainShader->GetBufferSize() };
+    pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT_WIREFRAME);
     pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     pipelineDesc.DepthStencilState.DepthEnable = false;
     pipelineDesc.DepthStencilState.StencilEnable = false;
     pipelineDesc.SampleMask = UINT_MAX;
-    pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
     pipelineDesc.NumRenderTargets = 1;
     pipelineDesc.RTVFormats[0] = DXGI_FORMAT_B8G8R8A8_UNORM;
     pipelineDesc.SampleDesc.Count = 1;
@@ -490,7 +515,7 @@ bool D3DClass::Render()
 	color[3] = 1.0;
 	m_commandList->ClearRenderTargetView(renderTargetViewHandle, color, 0, nullptr);
 
-    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     m_commandList->DrawInstanced(3, 1, 0, 0);
 
