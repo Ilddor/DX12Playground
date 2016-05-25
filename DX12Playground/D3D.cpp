@@ -2,7 +2,7 @@
 #include "d3dx12.h"
 #include <d3dcompiler.h>
 #include <array>
-#include <iostream>
+#include <fstream>
 
 D3DClass::D3DClass()
 {
@@ -262,49 +262,10 @@ bool D3DClass::Initialize(int screenHeight, int screenWidth, HWND hwnd, bool vsy
     //Note here to change D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION for debug
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
-    D3DCompileFromFile(
-        L"DefaultShaders.hlsl", 
-        nullptr, 
-        nullptr, 
-        "VSMain", 
-        "vs_5_0", 
-        compileFlags, 
-        0, 
-        &m_vertexShader, 
-        nullptr);
-
-    D3DCompileFromFile(
-        L"DefaultShaders.hlsl",
-        nullptr,
-        nullptr,
-        "PSMain",
-        "ps_5_0",
-        compileFlags,
-        0,
-        &m_pixelShader,
-        nullptr);
-
-    D3DCompileFromFile(
-        L"DefaultHS.hlsl",
-        nullptr,
-        nullptr,
-        "HSMain",
-        "hs_5_0",
-        compileFlags,
-        0,
-        &m_hullShader,
-        &error);
-
-    D3DCompileFromFile(
-        L"DefaultDS.hlsl",
-        nullptr,
-        nullptr,
-        "main",
-        "ds_5_0",
-        compileFlags,
-        0,
-        &m_domainShader,
-        &error);
+    D3DReadFileToBlob(L"DefaultVS.cso", &m_vertexShader);
+    D3DReadFileToBlob(L"DefaultHS.cso", &m_hullShader);
+    D3DReadFileToBlob(L"DefaultDS.cso", &m_domainShader);
+    D3DReadFileToBlob(L"DefaultPS.cso", &m_pixelShader);
 
     std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputElementDescs = 
     {

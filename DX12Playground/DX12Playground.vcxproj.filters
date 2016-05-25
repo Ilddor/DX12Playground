@@ -49,13 +49,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="DefaultShaders.hlsl">
-      <Filter>Resources</Filter>
-    </FxCompile>
     <FxCompile Include="DefaultHS.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
     <FxCompile Include="DefaultDS.hlsl">
+      <Filter>Resources</Filter>
+    </FxCompile>
+    <FxCompile Include="DefaultVS.hlsl">
+      <Filter>Resources</Filter>
+    </FxCompile>
+    <FxCompile Include="DefaultPS.hlsl">
       <Filter>Resources</Filter>
     </FxCompile>
   </ItemGroup>

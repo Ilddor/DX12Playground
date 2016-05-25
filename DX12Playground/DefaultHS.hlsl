@@ -44,7 +44,7 @@ ConstantOutputType ColorPatchConstantFunction(InputPatch<VertexOut, 3> inputPatc
 [outputcontrolpoints(3)]
 [patchconstantfunc("ColorPatchConstantFunction")]
 
-HullOutputType HSMain(InputPatch<VertexOut, 3> patch, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)
+HullOutputType main(InputPatch<VertexOut, 3> patch, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)
 {
     HullOutputType output;
 
