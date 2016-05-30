@@ -34,9 +34,9 @@ PixelInputType main(ConstantOutputType input, float3 uvwCoord : SV_DomainLocatio
     output.position = float4(vertexPosition, 1.0f);
 
     // Send the input color into the pixel shader.
-    /*float dist0 = distance(patch[0].position, uvwCoord);
-    float dist1 = distance(patch[1].position, uvwCoord);
-    float dist2 = distance(patch[2].position, uvwCoord);
+    float dist0 = distance(patch[0].position, vertexPosition);
+    float dist1 = distance(patch[1].position, vertexPosition);
+    float dist2 = distance(patch[2].position, vertexPosition);
 
     float minimum = min(dist0, dist1);
     minimum = min(minimum, dist2);
@@ -46,8 +46,8 @@ PixelInputType main(ConstantOutputType input, float3 uvwCoord : SV_DomainLocatio
     else if(minimum == dist1)
         output.color = patch[1].color;
     else
-        output.color = patch[2].color;*/
-    output.color = patch[1].color;
+        output.color = patch[2].color;
+    //output.color = patch[1].color;
 
     return output;
 }
